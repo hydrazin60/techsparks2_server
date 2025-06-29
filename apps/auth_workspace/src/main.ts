@@ -1,14 +1,48 @@
-import express from 'express';
+// apps/auth_workSpace/src/main.ts
+import express from "express";
+import bodyParser from "body-parser";
+import { dbConnect } from "../../../db/dbConnect";
 
-const host = process.env.HOST ?? 'localhost';
-const port = process.env.PORT ? Number(process.env.PORT) : 3000;
-
+import dotenv from "dotenv";
+import authRouter from "./routes/user.auth.route";
+dotenv.config();
 const app = express();
 
-app.get('/', (req, res) => {
-    res.send({ 'message': 'Hello API'});
+// Database connection
+dbConnect().catch((err) => {
+  console.error("Failed to connect to MongoDB", err);
+  process.exit(1);
 });
 
-app.listen(port, host, () => {
-    console.log(`[ ready ] http://${host}:${port}`);
+// Middlewares
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Error handling
+app.use(
+  (
+    err: Error,
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    console.error("Auth service error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+);
+
+// Routes
+app.get("/", (req, res) => {
+  res.status(200).json({ message: "Hello API from auth workspace" });
 });
+app.use("/api/v1/techsparks2/hackathon/user/auth", authRouter);
+
+const port = process.env.AUTH_PORT || 5000;
+app
+  .listen(port, () => {
+    console.log(`Auth service listening at http://localhost:${port}`);
+  })
+  .on("error", (err) => {
+    console.error("Auth service failed to start:", err);
+    process.exit(1);
+  });

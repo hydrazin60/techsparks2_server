@@ -8,6 +8,12 @@
     },
     {
       "path": "./apps/auth_workspace"
+    },
+    {
+      "path": "./apps/api_gateway-e2e"
+    },
+    {
+      "path": "./apps/api_gateway"
     }
   ]
 }
