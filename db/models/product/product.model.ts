@@ -43,7 +43,7 @@ const productSchema: Schema<IProduct> = new Schema(
     quantityAvailable: { type: Number, default: 0 },
     review: { type: Schema.Types.ObjectId, ref: "Review" },
     seller: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    statup: { type: Schema.Types.ObjectId, ref: "Startup" },
+    statup: { type: Schema.Types.ObjectId, ref: "Startup", required: true },
     biare: { type: Schema.Types.ObjectId, ref: "Biare" },
     status: {
       type: String,

@@ -31,10 +31,16 @@ import * as path from "path";
 import { dbConnect } from "../../../db/dbConnect";
 import productRoutes from "./routes/product.routes";
 import dotenv from "dotenv";
-
+import cors from "cors";
 dotenv.config();
 
 const app = express();
+
+cors({
+  origin: "*", // ❌ Not allowed with credentials: true
+  credentials: true, // ❌ Causes issue with wildcard
+  methods: ["GET", "POST", "PUT", "DELETE"],
+});
 
 // Middleware
 app.use(express.json());
@@ -50,11 +56,9 @@ dbConnect().catch((err) => {
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 
 // Routes
-app.use("/api/v1/products", productRoutes);
-
-// Health check
+app.use("/routes", productRoutes);
 app.get("/", (req, res) => {
-  res.send({ message: "Product service is running" });
+  res.send({ message: "Welcome to product_workspace!" });
 });
 
 // Error handling middleware
