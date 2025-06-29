@@ -1,3 +1,4 @@
+import { AuthError } from "./../../../../packages/error_handler/index";
 import { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
 import User from "../../../../db/models/user/User.model";
@@ -128,6 +129,114 @@ export const uploadProduct = async (
     res.status(500).json({
       success: false,
       message: error.message || "Error creating product",
+    });
+  }
+};
+
+export const getAllProduct = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const products = await Product.find()
+      .populate({
+        path: "review",
+        select: "-__v", // Exclude version key
+      })
+      .populate({
+        path: "seller",
+        select: "name email avatar role", // Only include necessary fields
+      })
+      .populate({
+        path: "biare",
+        select: "name  ", // Only include necessary fields
+      })
+      .exec();
+
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      products,
+    });
+  } catch (error: any) {
+    console.error("Error fetching products:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Error fetching products",
+    });
+  }
+};
+
+export const getoneProduct = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const productId = req.params.id;
+
+    // Validate product ID format
+    if (!productId || !mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid product ID format",
+      });
+    }
+
+    const product = await Product.findById(productId)
+      .populate({
+        path: "review",
+        select: "-__v",
+        populate: {
+          path: "user",
+          select: "name avatar",
+          model: "User", // Explicitly specify the model
+        },
+      })
+      .populate({
+        path: "seller",
+        select: "name email avatar role college",
+        model: "User",
+      })
+      //   .populate({
+      //     path: "description",
+      //     select: "name logo",
+      //     model: "Product",
+      //   })
+      .populate({
+        path: "biare",
+        select: "name avatar",
+        model: "Biare", // Make sure this matches your actual model name
+      })
+      .lean() // Convert to plain JS object for better performance
+      .exec();
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      product,
+    });
+  } catch (error: any) {
+    console.error("Error fetching product:", error);
+
+    // Handle specific Mongoose errors
+    if (error.name === "CastError") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid product ID",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Internal server error while fetching product",
     });
   }
 };
