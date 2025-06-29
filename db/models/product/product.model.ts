@@ -9,7 +9,7 @@ export interface IProduct extends Document {
   price: number;
   finalPrice: number;
   discount: number;
-  cupponcode?: string;
+  couponCode?: string;
   quantityAvailable?: number;
   status: string;
   review?: mongoose.Types.ObjectId;
@@ -37,7 +37,7 @@ const productSchema: Schema<IProduct> = new Schema(
     description: { type: String },
     images: [{ type: String }],
     discount: { type: Number, default: 0 },
-    cupponcode: { type: String },
+    couponCode: { type: String },
     finalPrice: { type: Number, default: 0 },
     price: { type: Number, required: true },
     quantityAvailable: { type: Number, default: 0 },

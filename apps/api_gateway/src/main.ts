@@ -69,6 +69,22 @@ app.use(
   })
 );
 
+app.use(
+  "/api/business",
+  proxy("http://localhost:3333", {
+    proxyReqPathResolver: (req) => {
+      const newPath = req.originalUrl.replace("/api/business", "");
+      console.log(
+        `Proxying: ${req.originalUrl} → http://localhost:3333${newPath}`
+      );
+      return newPath;
+    },
+    userResDecorator: (proxyRes, proxyResData, userReq, userRes) => {
+      console.log(`Proxy Response: ${proxyRes.statusCode} ${userReq.path}`);
+      return proxyResData;
+    },
+  })
+);
 // Default route
 app.get("/", (req, res) => {
   res.status(200).json({ message: "API Gateway is running" });

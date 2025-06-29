@@ -4,6 +4,7 @@ export interface IUser extends Document {
   name?: string;
   email: string;
   password?: string;
+  address?: string;
   gender?: string;
   googleId?: string;
   githubId?: string;
@@ -24,7 +25,7 @@ export interface IUser extends Document {
   bookmarks?: mongoose.Types.ObjectId[];
   avatar?: string;
   college?: string;
-  department?: string;
+  department?: string; //
   bio?: string;
   chats?: mongoose.Types.ObjectId[];
   startups?: mongoose.Types.ObjectId[];
@@ -56,13 +57,13 @@ const userSchema: Schema<IUser> = new Schema(
     phone: { type: String, match: /^(\+\d{1,3}[- ]?)?\d{10}$/ },
     googleId: { type: String },
     githubId: { type: String },
-
+    address: { type: String },
     role: {
       type: String,
       enum: ["student", "mentor", "admin"],
       default: "student",
     },
-    gender: { type: String, enum: ["male", "female", "other" ] },
+    gender: { type: String, enum: ["male", "female", "other"] },
     reviews: [{ type: Schema.Types.ObjectId, ref: "Review" }],
     collegeId: { type: String },
     collegeEmail: {
@@ -93,7 +94,7 @@ const userSchema: Schema<IUser> = new Schema(
 
     chats: [{ type: Schema.Types.ObjectId, ref: "Chat" }],
     startups: [{ type: Schema.Types.ObjectId, ref: "Startup" }],
-    expertiseAreas: [{ type: String }],
+    expertiseAreas: [{ type: String }], // Array of expertise areas
 
     followers: [{ type: Schema.Types.ObjectId, ref: "User" }],
     following: [{ type: Schema.Types.ObjectId, ref: "User" }],
