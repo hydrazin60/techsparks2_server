@@ -35,13 +35,12 @@ app.use(limiter);
 app.set("trust proxy", 1);
 
 // CORS
-app.use(
-  cors({
-    origin: "http://localhost:3000",
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-  })
-);
+cors({
+  origin: "http://localhost:3000",          // ❌ Not allowed with credentials: true
+  credentials: true,    // ❌ Causes issue with wildcard
+  methods: ["GET", "POST", "PUT", "DELETE"],
+})
+
 
 // Static assets
 app.use("/assets", express.static(path.join(__dirname, "assets")));
@@ -68,7 +67,7 @@ app.use(
     },
   })
 );
-
+// 
 app.use(
   "/api/business",
   proxy("http://localhost:3333", {
@@ -76,6 +75,23 @@ app.use(
       const newPath = req.originalUrl.replace("/api/business", "");
       console.log(
         `Proxying: ${req.originalUrl} → http://localhost:3333${newPath}`
+      );
+      return newPath;
+    },
+    userResDecorator: (proxyRes, proxyResData, userReq, userRes) => {
+      console.log(`Proxy Response: ${proxyRes.statusCode} ${userReq.path}`);
+      return proxyResData;
+    },
+  })
+);
+app.use(
+  "/api/product",
+  proxy("http://localhost:4444", {
+
+    proxyReqPathResolver: (req) => {
+      const newPath = req.originalUrl.replace("/api/product", "");
+      console.log(
+        `Proxying: ${req.originalUrl} → http://localhost:4444${newPath}`
       );
       return newPath;
     },

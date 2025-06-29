@@ -2,7 +2,7 @@
 import express from "express";
 import bodyParser from "body-parser";
 import { dbConnect } from "../../../db/dbConnect";
-
+import cors from "cors";
 import dotenv from "dotenv";
 import authRouter from "./routes/user.auth.route";
 dotenv.config();
@@ -32,11 +32,17 @@ app.use(
   }
 );
 
+cors({
+  origin: "http://localhost:3000", // ❌ Not allowed with credentials: true
+  credentials: true, // ❌ Causes issue with wildcard
+  methods: ["GET", "POST", "PUT", "DELETE"],
+});
+
 // Routes
 app.get("/", (req, res) => {
   res.status(200).json({ message: "Hello API from auth workspace" });
 });
-app.use("/api/v1/techsparks2/hackathon/user/auth", authRouter);
+app.use("/user/auth", authRouter);
 
 const port = process.env.AUTH_PORT || 5000;
 app

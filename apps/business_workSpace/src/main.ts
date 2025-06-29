@@ -3,11 +3,16 @@ import * as path from "path";
 import businessAccountRoutes from "./routes/businessAccount.routes";
 import { dbConnect } from "../../../db/dbConnect";
 import statupRoutes from "./routes/statup.routes";
-
+import cors from "cors";
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+cors({
+  origin: "*",          // ❌ Not allowed with credentials: true
+  credentials: true,    // ❌ Causes issue with wildcard
+  methods: ["GET", "POST", "PUT", "DELETE"],
+})
 
 dbConnect().catch((err) => {
   console.error("Failed to connect to MongoDB", err);
@@ -15,8 +20,8 @@ dbConnect().catch((err) => {
 });
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 
-app.use("/api/v1/techsparks2/businessAccounnts", businessAccountRoutes);
-app.use("/api/v1/techsparks2/startup", statupRoutes);
+app.use("/businessAccounnts", businessAccountRoutes);
+app.use("/startup", statupRoutes);
 app.get("/", (req, res) => {
   res.send({ message: "Welcome to business_workSpace!" });
 });
