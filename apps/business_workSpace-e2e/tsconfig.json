@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "out-tsc/@tech-sparks2-server/business_workSpace-e2e",
+    "esModuleInterop": true,
+    "noUnusedLocals": false,
+    "noImplicitAny": false
+  },
+  "include": [
+    "jest.config.ts",
+    "src/**/*.ts"
+  ],
+  "references": []
+}

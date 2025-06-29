@@ -14,6 +14,18 @@
     },
     {
       "path": "./apps/api_gateway"
+    },
+    {
+      "path": "./apps/business_workSpace-e2e"
+    },
+    {
+      "path": "./apps/business_workSpace"
+    },
+    {
+      "path": "./apps/product_workspace-e2e"
+    },
+    {
+      "path": "./apps/product_workspace"
     }
   ]
 }

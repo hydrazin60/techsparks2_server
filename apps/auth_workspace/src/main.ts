@@ -8,6 +8,7 @@ import authRouter from "./routes/user.auth.route";
 dotenv.config();
 const app = express();
 
+app.use(express.json());
 // Database connection
 dbConnect().catch((err) => {
   console.error("Failed to connect to MongoDB", err);

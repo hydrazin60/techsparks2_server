@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import {
   checkOtpRestrictions,
+  handleForgetPassword,
+  handleVerifyForgetPasswordOTP,
   sendOTP,
   trackOTPRequests,
   validateRegistrationData,
@@ -10,7 +12,10 @@ import {
 } from "../utils/auth_helper";
 import User from "../../../../db/models/user/User.model";
 import { ValidationError, AuthError } from "../../../../packages/error_handler";
+import redis from "../../../../packages/redis";
+import mongoose from "mongoose";
 
+// Function to set cookies
 const setCookies = (res: Response, token: string, value: string) => {
   res.cookie(token, value, {
     secure: true,
@@ -20,6 +25,7 @@ const setCookies = (res: Response, token: string, value: string) => {
   });
 };
 
+// Function to handle user registration
 export const UserRegistration = async (
   req: Request,
   res: Response,
@@ -61,6 +67,7 @@ export const UserRegistration = async (
   }
 };
 
+// Function to handle user OTP verification
 export const verifyUserOTP = async (
   req: Request,
   res: Response,
@@ -108,7 +115,7 @@ export const verifyUserOTP = async (
     next(err);
   }
 };
-
+// Function to handle user login
 export const LoginUser = async (
   req: Request,
   res: Response,
@@ -128,14 +135,13 @@ export const LoginUser = async (
       return next(new AuthError("User not found"));
     }
 
-    if (!user.password) {
-      return next(new AuthError("Invalid credentials"));
-    }
-
-    const isPasswordMatch = await bcrypt.compare(password, user.password);
+    const isPasswordMatch = await bcrypt.compare(
+      password,
+      user.password as string
+    );
 
     if (!isPasswordMatch) {
-      return next(new AuthError("Invalid credentials"));
+      return next(new AuthError("Password does not match"));
     }
 
     const accessSecret =
@@ -166,6 +172,128 @@ export const LoginUser = async (
       data: userData,
     });
   } catch (err) {
+    return next(err);
+  }
+};
+
+export const LogOutUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    res.clearCookie("accessToken", {
+      secure: true,
+      sameSite: "none",
+      httpOnly: true,
+    });
+    res.clearCookie("refreshToken", {
+      secure: true,
+      sameSite: "none",
+      httpOnly: true,
+    });
+    return res.status(200).json({
+      success: true,
+      message: "User logged out successfully",
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const userForgetPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  handleForgetPassword(req, res, next);
+};
+
+export const resetUserPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email, Newpassword } = req.body;
+    if (!email || !Newpassword) {
+      throw new ValidationError("Please provide all required fields");
+    }
+
+    // Check if OTP was verified
+    const isVerified = await redis.get(`password_reset_verified:${email}`);
+    if (!isVerified) {
+      throw new ValidationError(
+        "Password reset not authorized. Please verify OTP first."
+      );
+    }
+
+    // Make sure to select the password field
+    const user = await User.findOne({ email }).select("+password");
+    if (!user) {
+      throw new ValidationError("User not found");
+    }
+
+    // Check if password exists (modified to handle cases where password might be undefined)
+    if (user.password === undefined || user.password === null) {
+      // If no password exists (new user flow?), just set the new password
+      const hashedPassword = await bcrypt.hash(Newpassword, 10);
+      await User.updateOne({ email }, { $set: { password: hashedPassword } });
+    } else {
+      // Existing password flow
+      const isSamePassword = await bcrypt.compare(Newpassword, user.password);
+      if (isSamePassword) {
+        throw new ValidationError(
+          "New password cannot be same as old password"
+        );
+      }
+
+      const hashedPassword = await bcrypt.hash(Newpassword, 10);
+      await User.updateOne({ email }, { $set: { password: hashedPassword } });
+    }
+
+    // Cleanup verification flag
+    await redis.del(`password_reset_verified:${email}`);
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const verifyUserForgetPassswordOTP = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  handleVerifyForgetPasswordOTP(req, res, next);
+};
+
+export const ViewOwnProfile = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const ownId = req.userId; // Get the user ID from the request
+    if (!ownId || !mongoose.Types.ObjectId.isValid(ownId)) {
+      return next(new AuthError("invlided user id"));
+    }
+    const user = await User.findById(ownId).select("-password");
+    if (!user) {
+      return next(new AuthError("User not found ! please register first"));
+    }
+    const userData = await User.findById(ownId).select("-password");
+    return res.status(200).json({
+      success: true,
+      message: "User profile fetched successfully",
+      data: userData,
+    });
+  } catch (err) {
+    console.log(`Error in ViewOwnProfile: ${err}`);
     return next(err);
   }
 };

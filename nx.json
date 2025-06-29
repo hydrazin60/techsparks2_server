@@ -41,7 +41,9 @@
       },
       "exclude": [
         "apps/auth_workspace-e2e/**/*",
-        "apps/api_gateway-e2e/**/*"
+        "apps/api_gateway-e2e/**/*",
+        "apps/business_workSpace-e2e/**/*",
+        "apps/product_workspace-e2e/**/*"
       ]
     },
     {

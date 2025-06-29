@@ -1,0 +1,29 @@
+{
+  "name": "@tech-sparks2-server/product_workspace",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "targets": {
+      "serve": {
+        "continuous": true,
+        "executor": "@nx/js:node",
+        "defaultConfiguration": "development",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "buildTarget": "@tech-sparks2-server/product_workspace:build",
+          "runBuildTargetDependencies": false
+        },
+        "configurations": {
+          "development": {
+            "buildTarget": "@tech-sparks2-server/product_workspace:build:development"
+          },
+          "production": {
+            "buildTarget": "@tech-sparks2-server/product_workspace:build:production"
+          }
+        }
+      }
+    }
+  }
+}

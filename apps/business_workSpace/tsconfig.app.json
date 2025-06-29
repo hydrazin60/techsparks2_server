@@ -6,7 +6,7 @@
     "rootDir": "../../",
     "tsBuildInfoFile": "dist/tsconfig.app.tsbuildinfo"
   },
-  "include": ["src/**/*.ts", "../../packages/**/*.ts", "../../db/**/*.ts", "src/services/email/PasswordResetEmail", "../../packages/cloudnary/cloudnary.ts", "../../packages/multer/multer.ts", "../../packages/cloudnary/dataUri.ts"],
+  "include": ["src/**/*.ts", "../../packages/**/*.ts", "../../db/**/*.ts", "src/services/email/PasswordResetEmail", "../../packages/cloudnary/cloudnary.ts", "../../packages/multer/multer.ts", "../../packages/cloudnary/dataUri.js"],
   "exclude": [
     "out-tsc",
     "dist",

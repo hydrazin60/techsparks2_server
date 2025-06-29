@@ -1,9 +1,12 @@
 import redis from "../../../../packages/redis";
 import crypto from "crypto";
-import { ValidationError } from "../../../../packages/error_handler";
+import { AuthError, ValidationError } from "../../../../packages/error_handler";
 import { sendOTPVerificationEmail } from "../services/email/emailVerifyOTP";
+import { sendPasswordResetEmail } from "../services/email/passwordResetEmailToken";
 
+import { Request, Response } from "express";
 import { NextFunction } from "express";
+import User from "../../../../db/models/user/User.model";
 
 interface RegistrationData {
   name?: string;
@@ -165,4 +168,104 @@ export const trackOTPRequests = async (
 
   // Increment count and set 1 hour expiration
   await redis.set(otpRequestKey, (currentCount + 1).toString(), "EX", 3600);
+};
+
+export const handleForgetPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email } = req.body;
+
+    if (!email || !email.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return next(new AuthError("User not found"));
+    }
+
+    // Enforce cooldown if you want
+    await checkOtpRestrictions(email, next);
+    await trackOTPRequests(email, next);
+
+    // Generate token
+    const otp = crypto.randomInt(1000, 9999).toString();
+
+    // Store for 10 minutes
+    await redis.set(`password_reset_token:${email}`, otp, "EX", 600);
+
+    // Send the email
+    const sent = await sendPasswordResetEmail(email, otp, user.name || "User");
+    if (!sent) {
+      throw new Error("Failed to send reset email");
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset email sent successfully",
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const handleVerifyForgetPasswordOTP = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      throw new ValidationError("Please provide all required fields");
+    }
+
+    // Get the stored OTP from the correct key
+    const storedOTP = await redis.get(`password_reset_token:${email}`);
+    console.log(`Stored OTP for ${email}: ${storedOTP}`);
+    console.log(`Received OTP: ${otp}`);
+
+    if (!storedOTP) {
+      throw new ValidationError(
+        "OTP expired or not found. Please request a new OTP."
+      );
+    }
+
+    const failedAttemptsKey = `otp_attempts:${email}`;
+    const attempts = parseInt((await redis.get(failedAttemptsKey)) || "0") + 1;
+
+    if (storedOTP.trim() !== otp.trim()) {
+      if (attempts >= 3) {
+        await redis.set(`otp_lock:${email}`, "locked", "EX", 1800);
+        await redis.del(`password_reset_token:${email}`, failedAttemptsKey);
+        throw new ValidationError(
+          "Too many attempts. Try again after 30 minutes."
+        );
+      }
+
+      await redis.set(failedAttemptsKey, attempts.toString(), "EX", 300);
+      throw new ValidationError(
+        `Invalid OTP. ${3 - attempts} attempts remaining`
+      );
+    }
+
+    // Cleanup on successful verification
+    await redis.del(`password_reset_token:${email}`, failedAttemptsKey);
+    
+    // Set verification flag for password reset
+    await redis.set(`password_reset_verified:${email}`, "true", "EX", 600);
+
+    res.status(200).json({
+      success: true,
+      message: "OTP verified successfully",
+    });
+  } catch (err) {
+    return next(err);
+  }
 };
